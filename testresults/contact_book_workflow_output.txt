@@ -1,0 +1,597 @@
+====================================================================================================
+MULTI-AGENT SOFTWARE DEVELOPMENT WORKFLOW - OUTPUT REPORT
+====================================================================================================
+
+EXECUTION SUMMARY
+----------------------------------------------------------------------------------------------------
+Review Iterations:    0
+Code Status:          Approved
+Code Size:            193 lines
+Documentation Size:   129 lines
+Test Suite Size:      163 lines
+
+
+====================================================================================================
+SECTION 1: REFINED REQUIREMENTS
+====================================================================================================
+## Software Requirement Specification: In-Memory Contact Book
+
+### 1. System Purpose
+The system provides an in-memory contact book for managing contact information, including adding, searching, listing, and deleting contacts.
+
+### 2. Supported Operations
+
+#### 2.1. Add Contact
+*   **Description**: Adds a new contact to the contact book.
+*   **Inputs**:
+    *   `name`: String. Represents the unique name of the contact. Must be non-empty.
+    *   `phone_number`: String. Represents the phone number of the contact. Must be non-empty.
+    *   `email_address`: String. Represents the email address of the contact. Must be non-empty and contain '@' and '.' characters.
+*   **Outputs**: Returns `True` upon successful addition of the contact.
+*   **Error Conditions**:
+    *   Raises `ValueError` if `name` is empty or already exists in the contact book.
+    *   Raises `ValueError` if `phone_number` is empty.
+    *   Raises `ValueError` if `email_address` is empty or does not contain both '@' and '.' characters.
+
+#### 2.2. Search Contact
+*   **Description**: Searches for a contact by its unique name.
+*   **Inputs**:
+    *   `name`: String. Represents the unique name of the contact to search for. Must be non-empty.
+*   **Outputs**: Returns a dictionary representing the contact (`{"name": "...", "phone_number": "...", "email_address": "..."}`) if found. Returns `None` if no contact with the given name exists.
+*   **Error Conditions**:
+    *   Raises `ValueError` if `name` is empty.
+
+#### 2.3. List All Contacts
+*   **Description**: Retrieves all contacts currently stored in the contact book.
+*   **Inputs**: None.
+*   **Outputs**: Returns a list of dictionaries, where each dictionary represents a contact (`[{"name": "...", "phone_number": "...", "email_address": "..."}, ...]`). Returns an empty list if no contacts are present.
+*   **Error Conditions**: None.
+
+#### 2.4. Delete Contact
+*   **Description**: Deletes a contact from the contact book by its unique name.
+*   **Inputs**:
+    *   `name`: String. Represents the unique name of the contact to delete. Must be non-empty.
+*   **Outputs**: Returns `True` if the contact was successfully deleted. Returns `False` if no contact with the given name was found.
+*   **Error Conditions**:
+    *   Raises `ValueError` if `name` is empty.
+
+### 3. Assumptions
+*   All contact data is stored exclusively in-memory and is not persistent across program executions.
+*   Contact names are unique identifiers.
+*   Email address validation is basic, checking for the presence of '@' and '.' characters.
+*   Phone number validation only ensures the string is non-empty.
+
+### 4. Non-Goals
+*   Data persistence (e.g., saving to disk, database).
+*   User interface (e.g., command-line interface, graphical user interface).
+*   Advanced search functionalities (e.g., partial name matching, searching by phone number or email).
+*   Error logging or detailed error reporting beyond raising `ValueError` or returning specific values (`None`, `False`).
+*   Concurrency control for multi-threaded access.
+
+
+====================================================================================================
+SECTION 2: GENERATED CODE
+====================================================================================================
+```python
+class ContactBook:
+    """
+    An in-memory contact book for managing contact information.
+
+    Supports adding, searching, listing, and deleting contacts.
+    Contact names are unique identifiers.
+    """
+
+    def __init__(self):
+        """
+        Initializes a new ContactBook instance.
+        Contacts are stored in an in-memory dictionary.
+        """
+        self._contacts = {}  # Stores contacts: {name: {"phone_number": "...", "email_address": "..."}}
+
+    def add_contact(self, name: str, phone_number: str, email_address: str) -> bool:
+        """
+        Adds a new contact to the contact book.
+
+        Args:
+            name: The unique name of the contact. Must be non-empty.
+            phone_number: The phone number of the contact. Must be non-empty.
+            email_address: The email address of the contact. Must be non-empty
+                           and contain '@' and '.' characters.
+
+        Returns:
+            True upon successful addition of the contact.
+
+        Raises:
+            ValueError: If 'name' is empty or already exists.
+            ValueError: If 'phone_number' is empty.
+            ValueError: If 'email_address' is empty or invalid.
+        """
+        if not name:
+            raise ValueError("Contact name cannot be empty.")
+        if name in self._contacts:
+            raise ValueError(f"Contact with name '{name}' already exists.")
+        if not phone_number:
+            raise ValueError("Phone number cannot be empty.")
+        if not email_address:
+            raise ValueError("Email address cannot be empty.")
+        if '@' not in email_address or '.' not in email_address:
+            raise ValueError("Email address must contain '@' and '.' characters.")
+
+        self._contacts[name] = {
+            "phone_number": phone_number,
+            "email_address": email_address,
+        }
+        return True
+
+    def search_contact(self, name: str) -> dict | None:
+        """
+        Searches for a contact by its unique name.
+
+        Args:
+            name: The unique name of the contact to search for. Must be non-empty.
+
+        Returns:
+            A dictionary representing the contact
+            ({"name": "...", "phone_number": "...", "email_address": "..."}) if found.
+            Returns None if no contact with the given name exists.
+
+        Raises:
+            ValueError: If 'name' is empty.
+        """
+        if not name:
+            raise ValueError("Contact name cannot be empty for search.")
+
+        contact_data = self._contacts.get(name)
+        if contact_data:
+            # Reconstruct the full contact dictionary including the name
+            return {"name": name, **contact_data}
+        return None
+
+    def list_all_contacts(self) -> list[dict]:
+        """
+        Retrieves all contacts currently stored in the contact book.
+
+        Returns:
+            A list of dictionaries, where each dictionary represents a contact
+            ([{"name": "...", "phone_number": "...", "email_address": "..."}, ...]).
+            Returns an empty list if no contacts are present.
+        """
+        all_contacts = []
+        for name, data in self._contacts.items():
+            all_contacts.append({"name": name, **data})
+        return all_contacts
+
+    def delete_contact(self, name: str) -> bool:
+        """
+        Deletes a contact from the contact book by its unique name.
+
+        Args:
+            name: The unique name of the contact to delete. Must be non-empty.
+
+        Returns:
+            True if the contact was successfully deleted.
+            False if no contact with the given name was found.
+
+        Raises:
+            ValueError: If 'name' is empty.
+        """
+        if not name:
+            raise ValueError("Contact name cannot be empty for deletion.")
+
+        if name in self._contacts:
+            del self._contacts[name]
+            return True
+        return False
+
+
+if __name__ == "__main__":
+    # Minimal __main__ guard for safe execution and basic demonstration
+    contact_book = ContactBook()
+
+    print("--- Adding Contacts ---")
+    try:
+        contact_book.add_contact("Alice Smith", "123-456-7890", "alice.smith@example.com")
+        contact_book.add_contact("Bob Johnson", "098-765-4321", "bob.j@test.org")
+        contact_book.add_contact("Charlie Brown", "555-111-2222", "charlie@mail.net")
+        print("Contacts added successfully.")
+    except ValueError as e:
+        print(f"Error adding contact: {e}")
+
+    print("\n--- Attempting to add duplicate contact ---")
+    try:
+        contact_book.add_contact("Alice Smith", "111-222-3333", "alice2@example.com")
+    except ValueError as e:
+        print(f"Caught expected error: {e}")
+
+    print("\n--- Attempting to add contact with invalid email ---")
+    try:
+        contact_book.add_contact("Invalid Email", "111-222-3333", "invalid@email")
+    except ValueError as e:
+        print(f"Caught expected error: {e}")
+
+    print("\n--- Listing All Contacts ---")
+    contacts = contact_book.list_all_contacts()
+    if contacts:
+        for contact in contacts:
+            print(f"  Name: {contact['name']}, Phone: {contact['phone_number']}, Email: {contact['email_address']}")
+    else:
+        print("No contacts found.")
+
+    print("\n--- Searching for 'Bob Johnson' ---")
+    bob = contact_book.search_contact("Bob Johnson")
+    if bob:
+        print(f"  Found: Name: {bob['name']}, Phone: {bob['phone_number']}, Email: {bob['email_address']}")
+    else:
+        print("  Bob Johnson not found.")
+
+    print("\n--- Searching for 'NonExistent Contact' ---")
+    non_existent = contact_book.search_contact("NonExistent Contact")
+    if non_existent:
+        print(f"  Found: {non_existent}")
+    else:
+        print("  NonExistent Contact not found (as expected).")
+
+    print("\n--- Deleting 'Alice Smith' ---")
+    if contact_book.delete_contact("Alice Smith"):
+        print("  Alice Smith deleted successfully.")
+    else:
+        print("  Alice Smith not found for deletion.")
+
+    print("\n--- Listing All Contacts After Deletion ---")
+    contacts = contact_book.list_all_contacts()
+    if contacts:
+        for contact in contacts:
+            print(f"  Name: {contact['name']}, Phone: {contact['phone_number']}, Email: {contact['email_address']}")
+    else:
+        print("No contacts found.")
+
+    print("\n--- Attempting to delete non-existent contact ---")
+    if contact_book.delete_contact("NonExistent Contact"):
+        print("  NonExistent Contact deleted (unexpected).")
+    else:
+        print("  NonExistent Contact not found for deletion (as expected).")
+
+    print("\n--- Attempting operations with empty name ---")
+    try:
+        contact_book.add_contact("", "123", "a@b.com")
+    except ValueError as e:
+        print(f"Caught expected error for empty name in add: {e}")
+    try:
+        contact_book.search_contact("")
+    except ValueError as e:
+        print(f"Caught expected error for empty name in search: {e}")
+    try:
+        contact_book.delete_contact("")
+    except ValueError as e:
+        print(f"Caught expected error for empty name in delete: {e}")
+```
+
+
+====================================================================================================
+SECTION 3: CODE REVIEW FEEDBACK
+====================================================================================================
+All required operations are present and correctly implemented with matching inputs, outputs, and error handling as per the software requirement.
+
+
+====================================================================================================
+SECTION 4: DOCUMENTATION
+====================================================================================================
+## In-Memory Contact Book Documentation
+
+### 1. Overview
+The system provides an in-memory contact book for managing contact information. It supports core operations such as adding, searching, listing, and deleting contacts.
+
+### 2. Architecture / Design
+The system is implemented as a single class, `ContactBook`, which encapsulates all contact management logic.
+
+*   **`ContactBook` Class**:
+    *   **Responsibility**: Manages the collection of contacts.
+    *   **Internal Data Structure**: Contacts are stored in a private dictionary, `_contacts`. The keys of this dictionary are the unique contact names (strings), and the values are dictionaries containing the contact's `phone_number` and `email_address`.
+    *   **Data Flow**:
+        *   **Initialization**: The `__init__` method creates an empty `_contacts` dictionary.
+        *   **Adding Contacts**: The `add_contact` method validates input, then stores the new contact data in the `_contacts` dictionary using the provided `name` as the key.
+        *   **Searching Contacts**: The `search_contact` method retrieves contact data from `_contacts` using the `name` key. If found, it reconstructs a full contact dictionary including the name before returning.
+        *   **Listing Contacts**: The `list_all_contacts` method iterates through the `_contacts` dictionary, reconstructing a full contact dictionary for each entry (including the name) and collecting them into a list.
+        *   **Deleting Contacts**: The `delete_contact` method removes an entry from the `_contacts` dictionary using the `name` key.
+
+### 3. Public API
+
+#### Class: `ContactBook`
+Manages contact information in an in-memory store.
+
+*   **`__init__(self)`**
+    *   **Purpose**: Initializes a new, empty `ContactBook` instance.
+    *   **Inputs**: None.
+    *   **Outputs**: None.
+    *   **Error Behavior**: None.
+
+*   **`add_contact(self, name: str, phone_number: str, email_address: str) -> bool`**
+    *   **Purpose**: Adds a new contact to the contact book.
+    *   **Inputs**:
+        *   `name` (str): The unique name of the contact. Must be non-empty.
+        *   `phone_number` (str): The phone number of the contact. Must be non-empty.
+        *   `email_address` (str): The email address of the contact. Must be non-empty and contain both '@' and '.' characters.
+    *   **Outputs**: Returns `True` upon successful addition.
+    *   **Error Behavior**:
+        *   Raises `ValueError` if `name` is empty or already exists.
+        *   Raises `ValueError` if `phone_number` is empty.
+        *   Raises `ValueError` if `email_address` is empty or does not contain both '@' and '.' characters.
+
+*   **`search_contact(self, name: str) -> dict | None`**
+    *   **Purpose**: Searches for a contact by its unique name.
+    *   **Inputs**:
+        *   `name` (str): The unique name of the contact to search for. Must be non-empty.
+    *   **Outputs**: Returns a dictionary representing the contact (`{"name": "...", "phone_number": "...", "email_address": "..."}`) if found. Returns `None` if no contact with the given name exists.
+    *   **Error Behavior**:
+        *   Raises `ValueError` if `name` is empty.
+
+*   **`list_all_contacts(self) -> list[dict]`**
+    *   **Purpose**: Retrieves all contacts currently stored in the contact book.
+    *   **Inputs**: None.
+    *   **Outputs**: Returns a list of dictionaries, where each dictionary represents a contact (`[{"name": "...", "phone_number": "...", "email_address": "..."}, ...]`). Returns an empty list if no contacts are present.
+    *   **Error Behavior**: None.
+
+*   **`delete_contact(self, name: str) -> bool`**
+    *   **Purpose**: Deletes a contact from the contact book by its unique name.
+    *   **Inputs**:
+        *   `name` (str): The unique name of the contact to delete. Must be non-empty.
+    *   **Outputs**: Returns `True` if the contact was successfully deleted. Returns `False` if no contact with the given name was found.
+    *   **Error Behavior**:
+        *   Raises `ValueError` if `name` is empty.
+
+### 4. Usage Example
+
+```python
+# Create a new contact book instance
+contact_book = ContactBook()
+
+# Add contacts
+try:
+    contact_book.add_contact("Alice Smith", "123-456-7890", "alice.smith@example.com")
+    contact_book.add_contact("Bob Johnson", "098-765-4321", "bob.j@test.org")
+    print("Contacts added.")
+except ValueError as e:
+    print(f"Error adding contact: {e}")
+
+# List all contacts
+print("\nAll Contacts:")
+for contact in contact_book.list_all_contacts():
+    print(f"- {contact['name']}: {contact['phone_number']}, {contact['email_address']}")
+
+# Search for a contact
+print("\nSearching for 'Alice Smith':")
+alice = contact_book.search_contact("Alice Smith")
+if alice:
+    print(f"Found: {alice['name']}, Phone: {alice['phone_number']}")
+else:
+    print("Alice Smith not found.")
+
+# Attempt to add a duplicate contact (will raise ValueError)
+print("\nAttempting to add duplicate 'Alice Smith':")
+try:
+    contact_book.add_contact("Alice Smith", "111-222-3333", "alice2@example.com")
+except ValueError as e:
+    print(f"Caught expected error: {e}")
+
+# Delete a contact
+print("\nDeleting 'Bob Johnson':")
+if contact_book.delete_contact("Bob Johnson"):
+    print("Bob Johnson deleted.")
+else:
+    print("Bob Johnson not found for deletion.")
+
+# List all contacts after deletion
+print("\nContacts after deletion:")
+for contact in contact_book.list_all_contacts():
+    print(f"- {contact['name']}: {contact['phone_number']}, {contact['email_address']}")
+
+# Attempt to delete a non-existent contact
+print("\nAttempting to delete 'Charlie Brown':")
+if not contact_book.delete_contact("Charlie Brown"):
+    print("Charlie Brown not found (as expected).")
+```
+
+### 5. Assumptions and Limitations
+
+**Assumptions**:
+*   All contact data is stored exclusively in-memory and is not persistent across program executions.
+*   Contact names are unique identifiers.
+*   Email address validation is basic, checking only for the presence of '@' and '.' characters.
+*   Phone number validation only ensures the string is non-empty.
+
+**Limitations (Non-Goals)**:
+*   Data persistence (e.g., saving to disk, database).
+*   User interface (e.g., command-line interface, graphical user interface).
+*   Advanced search functionalities (e.g., partial name matching, searching by phone number or email).
+*   Error logging or detailed error reporting beyond raising `ValueError` or returning specific values (`None`, `False`).
+*   Concurrency control for multi-threaded access.
+
+
+====================================================================================================
+SECTION 5: TEST CASES
+====================================================================================================
+import pytest
+from app import ContactBook
+
+@pytest.fixture
+def contact_book():
+    """Provides a fresh ContactBook instance for each test."""
+    return ContactBook()
+
+# --- Unit Tests for ContactBook.__init__ ---
+def test_contact_book_initialization(contact_book):
+    """Test that a ContactBook instance can be created and is empty."""
+    assert isinstance(contact_book, ContactBook)
+    assert contact_book.list_all_contacts() == []
+
+# --- Unit Tests for ContactBook.add_contact ---
+def test_add_contact_success(contact_book):
+    """Test successful addition of a contact."""
+    assert contact_book.add_contact("Alice", "123-456-7890", "alice@example.com") is True
+    assert contact_book.search_contact("Alice") == {
+        "name": "Alice",
+        "phone_number": "123-456-7890",
+        "email_address": "alice@example.com",
+    }
+
+def test_add_multiple_contacts_success(contact_book):
+    """Test adding multiple contacts successfully."""
+    contact_book.add_contact("Alice", "123", "alice@example.com")
+    contact_book.add_contact("Bob", "456", "bob@test.com")
+    assert len(contact_book.list_all_contacts()) == 2
+
+def test_add_contact_empty_name_raises_error(contact_book):
+    """Test adding a contact with an empty name raises ValueError."""
+    with pytest.raises(ValueError, match="Contact name cannot be empty."):
+        contact_book.add_contact("", "123-456-7890", "test@example.com")
+
+def test_add_contact_duplicate_name_raises_error(contact_book):
+    """Test adding a contact with an existing name raises ValueError."""
+    contact_book.add_contact("Alice", "123-456-7890", "alice@example.com")
+    with pytest.raises(ValueError, match="Contact with name 'Alice' already exists."):
+        contact_book.add_contact("Alice", "987-654-3210", "alice2@example.com")
+
+def test_add_contact_empty_phone_number_raises_error(contact_book):
+    """Test adding a contact with an empty phone number raises ValueError."""
+    with pytest.raises(ValueError, match="Phone number cannot be empty."):
+        contact_book.add_contact("Alice", "", "alice@example.com")
+
+def test_add_contact_empty_email_address_raises_error(contact_book):
+    """Test adding a contact with an empty email address raises ValueError."""
+    with pytest.raises(ValueError, match="Email address cannot be empty."):
+        contact_book.add_contact("Alice", "123-456-7890", "")
+
+def test_add_contact_email_missing_at_raises_error(contact_book):
+    """Test adding a contact with an email missing '@' raises ValueError."""
+    with pytest.raises(ValueError, match="Email address must contain '@' and '.' characters."):
+        contact_book.add_contact("Alice", "123-456-7890", "aliceexample.com")
+
+def test_add_contact_email_missing_dot_raises_error(contact_book):
+    """Test adding a contact with an email missing '.' raises ValueError."""
+    with pytest.raises(ValueError, match="Email address must contain '@' and '.' characters."):
+        contact_book.add_contact("Alice", "123-456-7890", "alice@examplecom")
+
+def test_add_contact_email_missing_both_raises_error(contact_book):
+    """Test adding a contact with an email missing both '@' and '.' raises ValueError."""
+    with pytest.raises(ValueError, match="Email address must contain '@' and '.' characters."):
+        contact_book.add_contact("Alice", "123-456-7890", "aliceexamplecom")
+
+# --- Unit Tests for ContactBook.search_contact ---
+def test_search_contact_found(contact_book):
+    """Test searching for an existing contact."""
+    contact_book.add_contact("Bob", "111-222-3333", "bob@test.org")
+    result = contact_book.search_contact("Bob")
+    assert result == {"name": "Bob", "phone_number": "111-222-3333", "email_address": "bob@test.org"}
+
+def test_search_contact_not_found(contact_book):
+    """Test searching for a non-existent contact."""
+    contact_book.add_contact("Charlie", "555-111-2222", "charlie@mail.net")
+    result = contact_book.search_contact("NonExistent")
+    assert result is None
+
+def test_search_contact_empty_name_raises_error(contact_book):
+    """Test searching with an empty name raises ValueError."""
+    with pytest.raises(ValueError, match="Contact name cannot be empty for search."):
+        contact_book.search_contact("")
+
+# --- Unit Tests for ContactBook.list_all_contacts ---
+def test_list_all_contacts_empty(contact_book):
+    """Test listing contacts when the book is empty."""
+    assert contact_book.list_all_contacts() == []
+
+def test_list_all_contacts_with_contacts(contact_book):
+    """Test listing contacts with multiple contacts present."""
+    contact_book.add_contact("Alice", "123", "alice@example.com")
+    contact_book.add_contact("Bob", "456", "bob@test.com")
+    expected_contacts = [
+        {"name": "Alice", "phone_number": "123", "email_address": "alice@example.com"},
+        {"name": "Bob", "phone_number": "456", "email_address": "bob@test.com"},
+    ]
+    # Order might not be guaranteed in dictionary iteration, so sort for comparison
+    actual_contacts = sorted(contact_book.list_all_contacts(), key=lambda c: c['name'])
+    assert actual_contacts == sorted(expected_contacts, key=lambda c: c['name'])
+
+# --- Unit Tests for ContactBook.delete_contact ---
+def test_delete_contact_success(contact_book):
+    """Test successful deletion of an existing contact."""
+    contact_book.add_contact("David", "999-888-7777", "david@domain.com")
+    assert contact_book.delete_contact("David") is True
+    assert contact_book.search_contact("David") is None
+    assert contact_book.list_all_contacts() == []
+
+def test_delete_contact_not_found(contact_book):
+    """Test deleting a non-existent contact."""
+    contact_book.add_contact("Eve", "111-222-3333", "eve@mail.net")
+    assert contact_book.delete_contact("NonExistent") is False
+    assert len(contact_book.list_all_contacts()) == 1 # Ensure other contacts are untouched
+
+def test_delete_contact_empty_name_raises_error(contact_book):
+    """Test deleting with an empty name raises ValueError."""
+    with pytest.raises(ValueError, match="Contact name cannot be empty for deletion."):
+        contact_book.delete_contact("")
+
+# --- Integration Test ---
+def test_contact_book_full_workflow_integration(contact_book):
+    """
+    Integration test covering add, search, list, and delete operations
+    in a typical workflow.
+    """
+    # 1. Add contacts
+    assert contact_book.add_contact("Alice", "111", "alice@example.com") is True
+    assert contact_book.add_contact("Bob", "222", "bob@example.com") is True
+    assert contact_book.add_contact("Charlie", "333", "charlie@example.com") is True
+
+    # 2. List all contacts and verify count and content
+    all_contacts = sorted(contact_book.list_all_contacts(), key=lambda c: c['name'])
+    assert len(all_contacts) == 3
+    assert all_contacts[0]["name"] == "Alice"
+    assert all_contacts[1]["name"] == "Bob"
+    assert all_contacts[2]["name"] == "Charlie"
+
+    # 3. Search for an existing contact
+    bob_contact = contact_book.search_contact("Bob")
+    assert bob_contact == {"name": "Bob", "phone_number": "222", "email_address": "bob@example.com"}
+
+    # 4. Search for a non-existent contact
+    assert contact_book.search_contact("David") is None
+
+    # 5. Delete an existing contact
+    assert contact_book.delete_contact("Alice") is True
+    assert contact_book.delete_contact("NonExistent") is False # Attempt to delete non-existent
+
+    # 6. List all contacts again and verify deletion
+    remaining_contacts = sorted(contact_book.list_all_contacts(), key=lambda c: c['name'])
+    assert len(remaining_contacts) == 2
+    assert remaining_contacts[0]["name"] == "Bob"
+    assert remaining_contacts[1]["name"] == "Charlie"
+    assert contact_book.search_contact("Alice") is None
+
+    # 7. Add another contact after deletion
+    assert contact_book.add_contact("David", "444", "david@example.com") is True
+    final_contacts = sorted(contact_book.list_all_contacts(), key=lambda c: c['name'])
+    assert len(final_contacts) == 3
+    assert final_contacts[0]["name"] == "Bob"
+    assert final_contacts[1]["name"] == "Charlie"
+    assert final_contacts[2]["name"] == "David"
+
+
+====================================================================================================
+SECTION 6: DEPLOYMENT CONFIGURATION
+====================================================================================================
+
+--- File: requirements.txt ---
+# No external dependencies required
+
+--- File: run.sh ---
+#!/bin/sh
+
+# This script installs dependencies (if any) and runs the Python application.
+
+# No external dependencies are required for this application.
+
+# Run the Python application.
+python3 app.py
+
+====================================================================================================
+END OF REPORT
+====================================================================================================
