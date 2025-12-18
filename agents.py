@@ -54,7 +54,7 @@ def requirement_agent(state: DevState) -> DevState:
     return {
         **state,
         "refined_requirement": result.refined_requirement,
-        "review_attempt": 0,
+        "review_attempts": 0,
         "messages": [AIMessage(content="Requirement Agent: requirement refined")],
         "next_agent": "coding_agent"
     }
@@ -113,14 +113,14 @@ def review_agent(state: DevState) -> DevState:
             "next_agent": "documentation_agent"
         }
     
-    attempts = state["review_attempt"] + 1
+    attempts = state["review_attempts"] + 1
 
     if attempts >= 3:
         return {
             **state,
             "code_approved": False,
             "review_feedback": result.feedback,
-            "review_attempt": attempts,
+            "review_attempts": attempts,
             "messages": [AIMessage(content="Review Agent: max attempts reached, revisiting requirement")],
             "next_agent": "requirement_agent"
         }
@@ -129,7 +129,7 @@ def review_agent(state: DevState) -> DevState:
         **state,
         "code_approved": False,
         "review_feedback": result.feedback,
-        "review_attempt": attempts,
+        "review_attempts": attempts,
         "messages": [AIMessage(content=f"Review Agent: issues found (attempt {attempts}), retrying coding")],
         "next_agent": "coding_agent"
     }
@@ -185,6 +185,9 @@ class DeploymentOutput(BaseModel):
 
 
 def deployment_agent(state: DevState) -> DevState:
+    """Deployment Configuration Agent - Generates a deployment script to deploy the developed
+    code."""
+    
     structured_llm = llm.with_structured_output(DeploymentOutput)
 
     prompt = DEPLOYMENT_AGENT_PROMPT.format(
@@ -206,13 +209,15 @@ def deployment_agent(state: DevState) -> DevState:
         "next_agent": "end"
     }
 
+
 def route_agent(state: DevState):
     return state.get("next_agent", "end")
 
 
+# Graph creation
 workflow = StateGraph(DevState)
 
-# Add all agent nodes
+# Adding all agent nodes in the graph
 workflow.add_node("requirement_agent", requirement_agent)
 workflow.add_node("coding_agent", coding_agent)
 workflow.add_node("review_agent", review_agent)
@@ -220,10 +225,10 @@ workflow.add_node("documentation_agent", documentation_agent)
 workflow.add_node("test_agent", test_agent)
 workflow.add_node("deployment_agent", deployment_agent)
 
-# Set entry point
+# Setting entry point
 workflow.set_entry_point("requirement_agent")
 
-# Add conditional edges
+# Adding conditional edges
 workflow.add_conditional_edges(
     "requirement_agent",
     route_agent,
@@ -274,13 +279,9 @@ workflow.add_conditional_edges(
     }
 )
 
-# Compile the graph
+# Compiling the graph
 app = workflow.compile()
 
-
-# ============================================================================
-# EXECUTION FUNCTION WITH PROFESSIONAL OUTPUT
-# ============================================================================
 
 def run_dev_flow(user_requirement: str):
     """
